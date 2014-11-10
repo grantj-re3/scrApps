@@ -1,0 +1,13 @@
+Test Lyrics with Embedded Chords (key: [Am])
+--------------------------------
+[C] Ay [A] B minor [Bm] C sustained fourth [Csus4]
+B Flat minor seventh [Bbm7] D sharp augmented [D#+]
+Invalid H chord [Hdim] Invalid Z chord [Zaug]
+Invalid chord definition by overhanging from one line to next [A
+] Multiple chords [Em][Fmaj7] [G7]
+Double sharps [A##m][B##m][C##m][D##m]
+Double flats [Abbm][Bbbm][Cbbm]
+Leading/trailing space within chord token [ Em][Fm ][ Gm ]
+Lower-case chords [cm] [d#maj7] [ebdim]
+The end
+
