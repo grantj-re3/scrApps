@@ -3,7 +3,7 @@
 # File:		transpose_chords.rb
 # Author:	Grant Jackson
 # Package:	N/A
-# Environment:	Ruby 2.0.0
+# Environment:	Ruby 2.0.0 & 1.8.7
 #
 # Copyright (C) 2014
 # Licensed under GPLv3. GNU GENERAL PUBLIC LICENSE, Version 3, 29 June 2007
@@ -73,9 +73,10 @@ class Chord
   def initialize(chord_text)
     @chord = chord_text
 
-    # BEWARE: str[1] has different behaviour in Ruby 2.0.0 vs 1.8.7
-    if @chord.length > 1 && (@chord[1] == SHARP_CHAR || @chord[1] == FLAT_CHAR)
-      if @chord.length > 2 && @chord[1] == @chord[2]
+    # BEWARE: str[N] has different behaviour in Ruby 1.8.7 vs 1.9.
+    # Use str[N..N] to return a single char in both versions.
+    if @chord.length > 1 && (@chord[1..1] == SHARP_CHAR || @chord[1..1] == FLAT_CHAR)
+      if @chord.length > 2 && @chord[1..1] == @chord[2..2]
         # @root = A##,B##,C##...G##,Abb,Bbb,Cbb...Gbb
         max_idx = 2
       else
