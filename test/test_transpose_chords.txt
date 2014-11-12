@@ -9,5 +9,9 @@ Double sharps [A##m][B##m][C##m][D##m]
 Double flats [Abbm][Bbbm][Cbbm]
 Leading/trailing space within chord token [ Em][Fm ][ Gm ]
 Lower-case chords [cm] [d#maj7] [ebdim]
+Chords with note modifiers [Cm/Bb] [Cm/F#] [C/D] [Cm/E_bass/Fplucked]
+Warning: Does not understand meaning of note modifiers. Eg.
+  [Cm/Fthird_fret] [Cm/F3rd_fret] [Cm/A_on_Estring]
+Chords with invalid note modifiers [Cm/H] [Cm/Z#] [Cm/Xb] [H/Z]
 The end
 

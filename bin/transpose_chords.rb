@@ -30,7 +30,11 @@ class Chord
   SHARP_CHAR = '#'
   FLAT_CHAR = 'b'
 
-  SHOW_BAD_ROOT = '??'		# What to display for an invalid root-chord
+  SHOW_BAD_ROOT = '??'	# What to display for an invalid root-chord
+
+  # Delimiter to subdivide @remainder into parts (for transposition).
+  # Assign nil to disable transposition of @remainder.
+  DELIM = '/'	
 
   # - All arrays of chords below must be of length 12.
   #
@@ -128,10 +132,33 @@ class Chord
   end
 
   ############################################################################
+  # Transpose @remainder parts of the chord. Parts to be transposed are
+  # components immediately followed by DELIM (usually '/') by the amount
+  # @@transpose_hm_semitones. You can have several DELIM characters to
+  # transpose several parts.
+  # Eg. For @@transpose_hm_semitones = 2, this string:
+  #   [Cm/Bb] [Cm/F#] [C/D] [Cm/E_bass/Fplucked]
+  # is transposed to:
+  #   [Dm/C] [Dm/G#] [D/E] [Dm/F#_bass/Gplucked]
+  ############################################################################
+  def transpose_remainder
+    return @remainder unless DELIM
+    transposed_parts = []
+    @remainder.split(DELIM).each_with_index{|part_str, i|
+      if i == 0		# First part before note-modifer. Eg. 7, m, maj7
+        transposed_parts << part_str
+      else	# Note-modifer part. Must start with a valid note (ie. chord-root) Eg. G,Gb,Gbb,G#,G##
+        transposed_parts << "#{DELIM}#{Chord.new(part_str).transpose}"
+      end
+    }
+    transposed_parts.join
+  end
+
+  ############################################################################
   # Transpose the chord. Return as a new Chord object.
   ############################################################################
   def transpose
-    transpose_root ? Chord.new(transpose_root+@remainder) : Chord.new(SHOW_BAD_ROOT+@remainder)
+    transpose_root ? Chord.new(transpose_root+transpose_remainder) : Chord.new(SHOW_BAD_ROOT+transpose_remainder)
   end
 
   ############################################################################
