@@ -42,27 +42,23 @@ class Chord
   #   represent the *same* root-chord. Eg. The values of subscript 1
   #   in the various arrays are 'A#', 'Bb' and 'Cbb' and these values
   #   all represent the same root-chord.
-  #
-  # - All chords listed under :sharp or :flat sub-hashes will be deemed
-  #   as valid within the input file.
   CHROMATIC_ROOT_CHORDS = {
-    # :normal = All natural chords; All single sharps (except B# & E#)
-    # :abnormal = B# & E#; All double sharps; Some repeats
-    :sharp => {
-      :normal   => %w{A   A#  B   C   C#  D     D#  E   F   F#  G   G#},
-      :abnormal => %w{G## A#  A## B#  B## C##   D#  D## E#  E## F## G#},
-    },
+    # All possible representation of chords for input-detection
+    :input => {
+      # - All natural chords; Most single sharps (except B# & E#)
+      # - B# & E#; All double sharps; Some repeats
+      :sharp1 => %w{A   A#  B   C   C#  D     D#  E   F   F#  G   G#},
+      :sharp2 => %w{G## A#  A## B#  B## C##   D#  D## E#  E## F## G#},
 
-    # :normal = All natural chords; All single flats (except Cb & Fb)
-    # :abnormal = Cb & Fb; All double flats; Some repeats
-    :flat => {
-      :normal   => %w{A   Bb  B   C   Db  D     Eb  E   F   Gb  G   Ab},
-      :abnormal => %w{Bbb Cbb Cb  Dbb Db  Ebb   Fbb Fb  Gbb Gb  Abb Ab},
+      # - All natural chords; Most single flats (except Cb & Fb)
+      # - Cb & Fb; All double flats; Some repeats
+      :flat1  => %w{A   Bb  B   C   Db  D     Eb  E   F   Gb  G   Ab},
+      :flat2  => %w{Bbb Cbb Cb  Dbb Db  Ebb   Fbb Fb  Gbb Gb  Abb Ab},
     },
 
     # Preferred representation of chords for output
     :output => {
-      :normal => %w{A Bb B C C# D   D# E F F# G G#},
+      :normal => %w{A   Bb  B   C   C#  D     D#  E   F   F#  G   G#},
     },
   }
 
@@ -106,16 +102,14 @@ class Chord
   end
 
   ############################################################################
-  # Calculate the index of @root within the CHROMATIC_ROOT_CHORDS arrays
+  # Calculate the index of @root within the CHROMATIC_ROOT_CHORDS arrays.
+  # Return index 0..11 or nil if the root-chord is invalid.
   ############################################################################
   def calc_root_index
     @root_index = nil
-    CHROMATIC_ROOT_CHORDS.each{|hkey1, subhash|
-      next if hkey1 == :output
-      subhash.each{|hkey2, roots|
-        @root_index = roots.find_index(@root)
-        return if @root_index
-      }
+    CHROMATIC_ROOT_CHORDS[:input].each_value{|roots|
+      @root_index = roots.find_index(@root)
+      return if @root_index
     }
   end
 
@@ -312,16 +306,11 @@ class LyricChordLine
   ############################################################################
   def self.main
     clopts = self.get_command_line_options
-    #puts "clopts=#{clopts.inspect}"
     fname = clopts[:filename]
     LyricChordLine.transpose_hm_semitones = clopts[:num_semitones_up]
 
     File.open(fname) {|file|
-      file.each_line{|line_text|
-        lc_line = LyricChordLine.new(line_text)
-        transpose_line = lc_line.transpose
-        puts transpose_line
-      }
+      file.each_line{|line_text| puts LyricChordLine.new(line_text).transpose}
     }
   end
 
