@@ -233,14 +233,14 @@ class LyricChordLine
 	are present. In that case any root-chord (or note) which appears immediately
 	after the '/' shall also be transposed. Eg. [C7/G] to [D7/A]
 
-	For example, the following commands will transpose down by 3 semi-tones.
-	  #{app}  -d 3  song.txt
-	  #{app}  -f C   -t a   song.txt  # Upper or lower case chord
-	  #{app}  -f G7  -t E7  song.txt  # '7' is ignored
-
 	The command:      #{app}  -u 2  song.txt
 	will change this: [G]Or [Am]when [G/B]the [Am]valley's [F]hushed and ...
 	to this:          [A]Or [Bm]when [A/C#]the [Bm]valley's [G]hushed and ...
+
+	All of the following commands will transpose down by 3 semi-tones.
+	  #{app}  -d 3  song.txt
+	  #{app}  -f C   -t a   song.txt  # Upper or lower case chord
+	  #{app}  -f G7  -t E7  song.txt  # '7' is ignored
     MSG_COMMAND_LINE_ARGS
     exit 1
   end
