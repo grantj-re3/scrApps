@@ -1,0 +1,8 @@
+
+The Linux command below shows how to transpose:
+- the text file containing Danny Boy in the key of C (DannyBoy_Weatherly_C.txt)
+to:
+- the ext file containing Danny Boy in the key of D (DannyBoy_Weatherly_D.txt)
+
+$ ../bin/transpose_chords.rb -u 2 DannyBoy_Weatherly_C.txt > DannyBoy_Weatherly_D.txt
+
