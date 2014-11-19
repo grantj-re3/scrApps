@@ -221,10 +221,26 @@ class LyricChordLine
 
     STDERR.puts <<-MSG_COMMAND_LINE_ARGS.gsub(/^\t*/, '')
 	Usage:
-	  #{app}  -h
-	  #{app}  -u NUM_SEMITONES_UP  TEXT_FILE
-	  #{app}  -d NUM_SEMITONES_DOWN  TEXT_FILE
-	  #{app}  -f FROM_KEY  -t TO_KEY  TEXT_FILE
+	  #{app}  -h|--help
+	  #{app}  -u|-d NUM_SEMITONES_UP_OR_DOWN  TEXT_FILE
+	  #{app}  -f FROM_CHORD  -t TO_CHORD  TEXT_FILE
+	where: FROM_CHORD and TO_CHORD must start with a root-chord
+	  and: A root-chord is A-G, A#-G#, Ab-Gb, A##-G## or Abb-Gbb
+
+	TEXT_FILE must contain lyrics with inline chords. Chords must be placed between
+	square brackets, eg. [Bbmaj7]. The chord-part after the root-chord (eg. 'maj7')
+	shall be unchanged during the transposition unless one or more '/' characters
+	are present. In that case any root-chord (or note) which appears immediately
+	after the '/' shall also be transposed. Eg. [C7/G] to [D7/A]
+
+	For example, the following commands will transpose down by 3 semi-tones.
+	  #{app}  -d 3  song.txt
+	  #{app}  -f C   -t a   song.txt  # Upper or lower case chord
+	  #{app}  -f G7  -t E7  song.txt  # '7' is ignored
+
+	The command:      #{app}  -u 2  song.txt
+	will change this: [G]Or [Am]when [G/B]the [Am]valley's [F]hushed and ...
+	to this:          [A]Or [Bm]when [A/C#]the [Bm]valley's [G]hushed and ...
     MSG_COMMAND_LINE_ARGS
     exit 1
   end
@@ -241,22 +257,22 @@ class LyricChordLine
     while !ARGV.empty?
       arg = ARGV.shift
       case arg
-      when "-u"		# NUM_SEMITONES_UP
+      when "-u"			# NUM_SEMITONES_UP
         num_semitones_up = ARGV.shift.to_i
 
-      when "-d"		# NUM_SEMITONES_DOWN
+      when "-d"			# NUM_SEMITONES_DOWN
         num_semitones_up = 0 - ARGV.shift.to_i
 
-      when "-f"		# FROM_KEY
+      when "-f"			# FROM_CHORD
         from_key = ARGV.shift
 
-      when "-t"		# TO_KEY
+      when "-t"			# TO_CHORD
         to_key = ARGV.shift
 
-      when "-h"		# HELP
+      when "-h","--help"	# HELP
         usage_exit
 
-      else		# TEXT_FILE or unexpected params
+      else			# TEXT_FILE or unexpected params
         other_args << arg
       end	# case
     end		# while
