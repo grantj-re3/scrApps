@@ -10,7 +10,7 @@ Apps:
 ## transpose_chords.rb
 
 ### Purpose
-To tanspose a file containing lyrics and inline chords.
+To transpose a file containing lyrics and inline chords.
 
 ### Usage
 ```
@@ -46,8 +46,8 @@ All of the following commands will transpose down by 3 semi-tones.
 - Able to transpose root-chords eg. G,G#,G##,Gb,Gbb
 - Able to transpose the part after the root-chord if it contains one or more '/' characters followed by a chord or note to be transposed
 - Able to configure the following features by changing constants within the program.
-  * The characters used to bracket the inline chords in TEXT_FILE. Default is [].
-  * The characters used to bracket the inline chords in the transposed output. Default is [].
+  * The characters used to bracket the inline chords in TEXT_FILE. Default is [ ].
+  * The characters used to bracket the inline chords in the transposed output. Default is [ ].
   * The characters used to signify that the next part of the chord (after the root chord) must also be transposed. Default is /.
   * The preferred representation of chords for output. Eg. Should the output show A# or Bb.
 

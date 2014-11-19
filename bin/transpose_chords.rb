@@ -43,7 +43,7 @@ class Chord
   #   in the various arrays are 'A#', 'Bb' and 'Cbb' and these values
   #   all represent the same root-chord.
   CHROMATIC_ROOT_CHORDS = {
-    # All possible representation of chords for input-detection
+    # All possible representations of chords for input-detection
     :input => {
       # - All natural chords; Most single sharps (except B# & E#)
       # - B# & E#; All double sharps; Some repeats
