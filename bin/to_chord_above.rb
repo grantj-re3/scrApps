@@ -21,6 +21,9 @@
 ##############################################################################
 
 ##############################################################################
+# An object which takes a CBL-format line-part and understands whether
+# it is a chord-token string or a lyric string.
+##############################################################################
 class ChordLyricPart
 
   attr_reader :part, :chord, :lyric
@@ -50,14 +53,31 @@ class ChordLyricPart
 end
 
 ##############################################################################
+# An object which takes a CBL-format line; is able to divide it
+# into chord-token and lyric parts; is able to convert it into
+# a CAL-format line.
+##############################################################################
 class ChordLyricLineParts
  
   DELIM_RE0 = '\['	# Regex version of start of chord-token
   DELIM_RE1 = '\]'	# Regex version of end of chord-token
 
-  MATCH_TOKEN = Regexp.new("#{DELIM_RE0}([^#{DELIM_RE1}]*)#{DELIM_RE1}")
-  MATCH_PARTS = Regexp.new("^([^#{DELIM_RE0}]*)(#{DELIM_RE0}[^#{DELIM_RE1}]+#{DELIM_RE1})(.*)$")
+  MATCH_TOKEN = /#{DELIM_RE0}([^#{DELIM_RE1}]*)#{DELIM_RE1}/	# Eg. "[C7]"
+  MATCH_PARTS = /^([^#{DELIM_RE0}]*)(#{DELIM_RE0}[^#{DELIM_RE1}]+#{DELIM_RE1})(.*)$/
+  MATCH_SPACES = /^ +$/
 
+  # A character to extend the span of a sylable when a long chord is above it.
+  # If you are going to convert back and forth between CBL and CAL formats,
+  # it would be best to choose a character which does not appear in normal
+  # song text (eg. '_' or '~' or '|' but not '-' or '.').
+  SPAN_CHAR = '_'
+
+  # Insert multiple SPAN_CHARs (true) or a single SPAN_CHAR (false) into lyrics
+  INSERT_MULTI_SPAN_CHARS = true
+
+  ############################################################################
+  # Create an object. If the line contains chord-tokens, divide into
+  # parts consisting of chord-tokens and lyrics (ie. non chord-tokens).
   ############################################################################
   def initialize(cbl_line)
     @line = cbl_line
@@ -82,10 +102,15 @@ class ChordLyricLineParts
   end
 
   ############################################################################
+  # If the line contains chord-tokens, return it in the 2-line CAL format
+  # else return the original line.
+  ############################################################################
   def to_s_chord_above_line
     @has_tokens ? make_2_lines : @line
   end
 
+  ############################################################################
+  # Return a string containing the 2-line CAL format from the line-parts.
   ############################################################################
   def make_2_lines
     puts '=' * 70
@@ -103,21 +128,30 @@ class ChordLyricLineParts
       next if i == 0
 
       if part.chord?
-        if next_part.chord?
+        if next_part.chord?	# Is chord + next is chord
           chord_line << part.chord + ' '
-          lyric_line << self.class.pad(part.chord + ' ')
-        else
+          lyric_line << self.class.pad(0, part.chord + ' ')
+        else			# Is chord + next is lyric
+
           diff_length = next_part.lyric.length - part.chord.length
-          if diff_length > 0
-            chord_line << part.chord << self.class.pad(nil, diff_length)
-          else
+          if diff_length > 0	# next lyric length > chord length
+            chord_line << part.chord << self.class.pad(diff_length)
+          else			# next lyric length <= chord length
             chord_line << part.chord + ' '	# chord.length + 1
             num_pad_next_lyric_part = 1 - diff_length
           end
+
         end
-      else
-        chord_line << self.class.pad(nil, part.lyric.length) if i == 1  # Line starts with lyric
-        lyric_line << part.lyric + self.class.pad(nil, num_pad_next_lyric_part)
+      else			# Is lyric
+        chord_line << self.class.pad(part.lyric.length) if i == 1  # Line starts with lyric
+        if part.lyric.match(MATCH_SPACES)
+          lyric_line << part.lyric + self.class.pad(num_pad_next_lyric_part)
+        else
+          lyric_line << ( INSERT_MULTI_SPAN_CHARS ?
+            part.lyric + self.class.pad(num_pad_next_lyric_part, nil, SPAN_CHAR) :
+            part.lyric + self.class.pad(num_pad_next_lyric_part, nil, ' ', SPAN_CHAR ,1)
+          )
+        end
         num_pad_next_lyric_part = 0
       end
     }
@@ -132,13 +166,35 @@ class ChordLyricLineParts
   end
 
   ############################################################################
-  def self.pad(string, num_extra_chars=0)
-    ' ' * ("#{string}".length + num_extra_chars)
+  # If a single argument is present:
+  #   Return a padded string of the length specified by char_count.
+  # If 2 arguments are present:
+  #   Return a padded string of the length specified by char_count plus
+  #   the length of 'string'. To specify a zero-length string you can
+  #   either use nil or an empty string (ie. '').
+  # If 3 arguments are present:
+  #   As per 2 arguments, but be default pad-character can be specified
+  #   to be something other than space.
+  # If 5 arguments are present:
+  #   As per 3 arguments, but one can specify one or more alternative
+  #   characters to be prepended to the front (or left side) of the
+  #   default characters.
+  ############################################################################
+  def self.pad(char_count, string='', default_pad_char=' ',
+      front_pad_char=' ', front_pad_char_count=0
+    )
+
+    pad_length = char_count + "#{string}".length
+    return '' if pad_length <= 0
+    return default_pad_char * pad_length if front_pad_char_count <= 0
+    return front_pad_char * pad_length if front_pad_char_count >= pad_length
+
+    front_pad_char * front_pad_char_count + default_pad_char * (pad_length - front_pad_char_count)
   end
 
   ############################################################################
   def self.main
-    fname = "mary_cbf.txt"
+    fname = File.expand_path("../test/test_to_chord_above/mary_cbl.txt", File.dirname(__FILE__))
     File.open(fname){|file|
       file.each_line{|line|
         parts = ChordLyricLineParts.new(line)
@@ -151,5 +207,13 @@ end
 ##############################################################################
 # Main()
 ##############################################################################
+=begin
+# Add dirs to the library path
+$: << File.expand_path("../test/test_to_chord_above", File.dirname(__FILE__))
+require 'test_01'
+
+ChordLyricLineParts.test_pad
+=end
+
 ChordLyricLineParts.main
 
