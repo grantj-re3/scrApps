@@ -205,11 +205,48 @@ class ChordLyricLineParts
   end
 
   ############################################################################
+  # Show an optional message (given by the argument), then the usage
+  # info, then exit the program
+  ############################################################################
+  def self.usage_exit(message=nil)
+    STDERR.puts "#{message}\n" if message
+    app = File.basename($0)
+
+    STDERR.puts <<-MSG_COMMAND_LINE_ARGS.gsub(/^\t*/, '')
+	Usage:
+	  #{app}  -h|--help
+	  #{app}  TEXT_FILE
+
+	TEXT_FILE must contain lyrics with inline chords. Chords must be placed between
+	square brackets, eg. [Bbmaj7].
+
+	The command:     #{app} song.txt
+	or the command:  cat song.txt |#{app}
+	will change:
+	        [C]I [C7]lov[D]e [Bbdim]you
+	        Oh [Bbm7]Con[Gbmaj7]grat[Dm]u[Cm]la[C]tions
+	into:
+	        C C7 D Bbdim
+	        I love you
+	           Bbm7 Gbmaj7 Dm Cm C
+	        Oh Con__grat___u__la_tions
+    MSG_COMMAND_LINE_ARGS
+    exit 1
+  end
+
+  ############################################################################
+  # Process each line in CBL format; convert to CAL format
+  ############################################################################
   def self.main
-    while gets		# Read lines from command-line args or STDIN
-      line = $_
-      parts = ChordLyricLineParts.new(line)
-      puts parts.to_s_chord_above_line
+    usage_exit if ARGV.include?('-h') || ARGV.include?('--help')
+    begin
+      while line = gets		# Read lines from command-line args or STDIN
+        parts = ChordLyricLineParts.new(line)
+        puts parts.to_s_chord_above_line
+      end
+
+    rescue Exception => e
+      usage_exit e
     end
   end
 end
