@@ -169,9 +169,10 @@ class ChordLyricLineParts
   # If a single argument is present:
   #   Return a padded string of the length specified by char_count.
   # If 2 arguments are present:
-  #   Return a padded string of the length specified by char_count plus
-  #   the length of 'string'. To specify a zero-length string you can
-  #   either use nil or an empty string (ie. '').
+  #   Return a padded string of length specified by char_count plus
+  #   the length of to_s_length after it is converted to a string. To
+  #   specify a zero-length string you can either use nil or an empty
+  #   string (ie. '') for to_s_length.
   # If 3 arguments are present:
   #   As per 2 arguments, but be default pad-character can be specified
   #   to be something other than space.
@@ -180,11 +181,12 @@ class ChordLyricLineParts
   #   characters to be prepended to the front (or left side) of the
   #   default characters.
   ############################################################################
-  def self.pad(char_count, string='', default_pad_char=' ',
+  def self.pad(
+      char_count, to_s_length='', default_pad_char=' ',
       front_pad_char=' ', front_pad_char_count=0
     )
 
-    pad_length = char_count + "#{string}".length
+    pad_length = char_count + to_s_length.to_s.length
     return '' if pad_length <= 0
     return default_pad_char * pad_length if front_pad_char_count <= 0
     return front_pad_char * pad_length if front_pad_char_count >= pad_length
