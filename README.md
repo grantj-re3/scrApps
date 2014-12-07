@@ -17,6 +17,7 @@ To transpose a file containing lyrics and inline chords.
 
 ### Usage
 ```
+Usage:
   transpose_chords.rb  -h|--help
   transpose_chords.rb  -u|-d NUM_SEMITONES_UP_OR_DOWN  TEXT_FILE
   transpose_chords.rb  -f FROM_CHORD  -t TO_CHORD  TEXT_FILE
@@ -64,6 +65,7 @@ to Chord-Above-Lyrics (CAL) format.
 ### Usage
 
 ```
+Usage:
   to_chord_above.rb  -h|--help
   to_chord_above.rb  TEXT_FILE
 
