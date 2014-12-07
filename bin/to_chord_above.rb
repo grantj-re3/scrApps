@@ -64,7 +64,7 @@ class ChordLyricLineParts
 
   MATCH_TOKEN = /#{DELIM_RE0}([^#{DELIM_RE1}]*)#{DELIM_RE1}/	# Eg. "[C7]"
   MATCH_PARTS = /^([^#{DELIM_RE0}]*)(#{DELIM_RE0}[^#{DELIM_RE1}]+#{DELIM_RE1})(.*)$/
-  MATCH_SPACES = /^ +$/
+  MATCH_EOL_SPACES = / $/
 
   # A character to extend the span of a sylable when a long chord is above it.
   # If you are going to convert back and forth between CBL and CAL formats,
@@ -74,6 +74,8 @@ class ChordLyricLineParts
 
   # Insert multiple SPAN_CHARs (true) or a single SPAN_CHAR (false) into lyrics
   INSERT_MULTI_SPAN_CHARS = true
+
+  NEWLINE = "\n"
 
   ############################################################################
   # Create an object. If the line contains chord-tokens, divide into
@@ -106,14 +108,14 @@ class ChordLyricLineParts
   # else return the original line.
   ############################################################################
   def to_s_chord_above_line
-    @has_tokens ? make_2_lines : @line
+    @has_tokens ? to_s_2_lines : @line
   end
 
   ############################################################################
   # Return a string containing the 2-line CAL format from the line-parts.
   ############################################################################
-  def make_2_lines
-    puts '=' * 70
+  def to_s_2_lines
+    #puts '=' * 70
     #puts "@parts=#{@parts.inspect}"
 
     chord_line = ''
@@ -131,8 +133,8 @@ class ChordLyricLineParts
         if next_part.chord?	# Is chord + next is chord
           chord_line << part.chord + ' '
           lyric_line << self.class.pad(0, part.chord + ' ')
-        else			# Is chord + next is lyric
 
+        else			# Is chord + next is lyric
           diff_length = next_part.lyric.length - part.chord.length
           if diff_length > 0	# next lyric length > chord length
             chord_line << part.chord << self.class.pad(diff_length)
@@ -144,7 +146,7 @@ class ChordLyricLineParts
         end
       else			# Is lyric
         chord_line << self.class.pad(part.lyric.length) if i == 1  # Line starts with lyric
-        if part.lyric.match(MATCH_SPACES)
+        if part.lyric.match(MATCH_EOL_SPACES)
           lyric_line << part.lyric + self.class.pad(num_pad_next_lyric_part)
         else
           lyric_line << ( INSERT_MULTI_SPAN_CHARS ?
@@ -161,8 +163,10 @@ class ChordLyricLineParts
       lyric_line << next_part.lyric
     end
   
-    puts "chord_line<#{chord_line}>"
-    puts "lyric_line<#{lyric_line}>"
+    #puts "chord_line<#{chord_line}>"
+    #puts "lyric_line<#{lyric_line}>"
+
+    chord_line + NEWLINE + lyric_line
   end
 
   ############################################################################
@@ -196,13 +200,11 @@ class ChordLyricLineParts
 
   ############################################################################
   def self.main
-    fname = File.expand_path("../test/test_to_chord_above/mary_cbl.txt", File.dirname(__FILE__))
-    File.open(fname){|file|
-      file.each_line{|line|
-        parts = ChordLyricLineParts.new(line)
-        puts parts.to_s_chord_above_line
-      }
-    }
+    while gets		# Read lines from command-line args or STDIN
+      line = $_
+      parts = ChordLyricLineParts.new(line)
+      puts parts.to_s_chord_above_line
+    end
   end
 end
 
