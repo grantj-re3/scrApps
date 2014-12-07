@@ -66,8 +66,10 @@ class ChordLyricLineParts
   MATCH_PARTS = /^([^#{DELIM_RE0}]*)(#{DELIM_RE0}[^#{DELIM_RE1}]+#{DELIM_RE1})(.*)$/
   MATCH_EOL_SPACES = / $/
 
-  # Special "key-lines" like "Key: []" (indicating the key of the song)
+  # Special "key-lines" like "Key: [Dm]" (indicating the key of the song)
   # will not be converted into 2 lines during CBL to CAL conversion.
+  # We would like such lines to contain a valid chord-token so that
+  # it can be recognised as a chord and transposed if required.
   MATCH_KEY_LINE = /^[[:space:]]*key:[[:space:]]*#{MATCH_TOKEN}[[:space:]]*$/i
 
   # A character to extend the span of a sylable when a long chord is above it.
@@ -167,10 +169,10 @@ class ChordLyricLineParts
       lyric_line << next_part.lyric
     end
   
-    #puts "chord_line<#{chord_line}>"
-    #puts "lyric_line<#{lyric_line}>"
+    #puts "chord_line<#{chord_line.rstrip}>"
+    #puts "lyric_line<#{lyric_line.rstrip}>"
 
-    chord_line + NEWLINE + lyric_line
+    chord_line.rstrip + NEWLINE + lyric_line.rstrip
   end
 
   ############################################################################
