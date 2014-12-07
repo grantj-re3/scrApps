@@ -66,6 +66,10 @@ class ChordLyricLineParts
   MATCH_PARTS = /^([^#{DELIM_RE0}]*)(#{DELIM_RE0}[^#{DELIM_RE1}]+#{DELIM_RE1})(.*)$/
   MATCH_EOL_SPACES = / $/
 
+  # Special "key-lines" like "Key: []" (indicating the key of the song)
+  # will not be converted into 2 lines during CBL to CAL conversion.
+  MATCH_KEY_LINE = /^[[:space:]]*key:[[:space:]]*#{MATCH_TOKEN}[[:space:]]*$/i
+
   # A character to extend the span of a sylable when a long chord is above it.
   # If you are going to convert back and forth between CBL and CAL formats,
   # it would be best to choose a character which does not appear in normal
@@ -108,7 +112,7 @@ class ChordLyricLineParts
   # else return the original line.
   ############################################################################
   def to_s_chord_above_line
-    @has_tokens ? to_s_2_lines : @line
+    @has_tokens && !@line.match(MATCH_KEY_LINE) ? to_s_2_lines : @line
   end
 
   ############################################################################
