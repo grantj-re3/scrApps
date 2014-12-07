@@ -9,7 +9,7 @@
 # Licensed under GPLv3. GNU GENERAL PUBLIC LICENSE, Version 3, 29 June 2007
 # http://www.gnu.org/licenses/
 #
-# Convert lyric-chord sheets from Chord-Between-Lyrics (CBL) format
+# Convert a song from Chord-Between-Lyrics (CBL) format
 # to Chord-Above-Lyrics (CAL) format.
 #
 # Chord-Between-Lyrics (CBL) format example:
@@ -72,7 +72,7 @@ class ChordLyricLineParts
   # it can be recognised as a chord and transposed if required.
   MATCH_KEY_LINE = /^[[:space:]]*key:[[:space:]]*#{MATCH_TOKEN}[[:space:]]*$/i
 
-  # A character to extend the span of a sylable when a long chord is above it.
+  # A character to extend the span of a syllable when a long chord is above it.
   # If you are going to convert back and forth between CBL and CAL formats,
   # it would be best to choose a character which does not appear in normal
   # song text (eg. '_' or '~' or '|' but not '-' or '.').
@@ -121,9 +121,6 @@ class ChordLyricLineParts
   # Return a string containing the 2-line CAL format from the line-parts.
   ############################################################################
   def to_s_2_lines
-    #puts '=' * 70
-    #puts "@parts=#{@parts.inspect}"
-
     chord_line = ''
     lyric_line = ''
     next_part = nil
@@ -169,9 +166,6 @@ class ChordLyricLineParts
       lyric_line << next_part.lyric
     end
   
-    #puts "chord_line<#{chord_line.rstrip}>"
-    #puts "lyric_line<#{lyric_line.rstrip}>"
-
     chord_line.rstrip + NEWLINE + lyric_line.rstrip
   end
 
