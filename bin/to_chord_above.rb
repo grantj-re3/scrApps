@@ -178,7 +178,7 @@ class ChordLyricLineParts
   #   specify a zero-length string you can either use nil or an empty
   #   string (ie. '') for to_s_length.
   # If 3 arguments are present:
-  #   As per 2 arguments, but be default pad-character can be specified
+  #   As per 2 arguments, but the default pad-character can be specified
   #   to be something other than space.
   # If 5 arguments are present:
   #   As per 3 arguments, but one can specify one or more alternative
