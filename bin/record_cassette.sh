@@ -55,14 +55,15 @@ usage_exit() {
 	Usage:  $app  --help|-h
 
 	Where:
-	  -m specifies the nominal duration (in minutes) of one side of the
+	  -m specifies the nominal duration in [m]inutes of one side of the
 	     cassette to be recorded.
-	  -o specifies the output MP3 filename;
+	  -o specifies the [o]utput MP3 filename;
 	     default filename is "$FNAME4MSG";
-	     default directory is "$DEFAULT_DIR".
-	  -p causes the program to prompt the user for the output MP3 filename.
-	  --test|-t causes the program to perform a test recording for $SECONDS_TEST seconds.
-	  --help|-h shows this help message.
+	     default directory is "$DEFAULT_DIR";
+             you can write to your current directory using "-o ./OUT_MP3_FILENAME"
+	  -p causes the program to [p]rompt the user for the output MP3 filename.
+	  --test|-t causes the program to perform a [t]est recording for $SECONDS_TEST seconds.
+	  --help|-h shows this [h]elp message.
 
 	The names of the pulse-audio input devices connected now are:
 	EO_USAGE_MSG
@@ -131,12 +132,11 @@ setup_vars() {
   # Test mode
   if [ $copt_test = 1 ]; then
     seconds=$SECONDS_TEST
-    #path="$copt_path"
     return
   fi
 
   # Calculate number of seconds to record
-  if ! echo "$copt_nom_minutes" |egrep -q "^(0|15|30|45|60)$"; then
+  if ! echo "$copt_nom_minutes" |egrep -q "^(15|30|45|60)$"; then
     usage_exit "Nominal minutes must be one of 15,30,45,60."
   fi
   seconds=`expr \( $copt_nom_minutes \* 60 \) + $SECONDS_EXTRA`
