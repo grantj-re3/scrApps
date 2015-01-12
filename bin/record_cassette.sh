@@ -54,13 +54,12 @@ usage_exit() {
 	Usage:  $app  --test|-t
 	Usage:  $app  --help|-h
 
-	Where:
 	  -m specifies the nominal duration in [m]inutes of one side of the
 	     cassette to be recorded.
 	  -o specifies the [o]utput MP3 filename;
 	     default filename is "$FNAME4MSG";
 	     default directory is "$DEFAULT_DIR";
-             you can write to your current directory using "-o ./OUT_MP3_FILENAME"
+	     you can write to your current directory using "-o ./OUT_MP3_FILENAME"
 	  -p causes the program to [p]rompt the user for the output MP3 filename.
 	  --test|-t causes the program to perform a [t]est recording for $SECONDS_TEST seconds.
 	  --help|-h shows this [h]elp message.
@@ -192,7 +191,7 @@ find_source_audio_device
 echo -e "\nSetting USB cassette as default audio device..."
 pacmd set-default-source "$pa_source"
 echo -e "\n\nSetting USB cassette volume..."
-pacmd set-source-volume "$PA_SOURCE" $pa_source
+pacmd set-source-volume "$pa_source" $PA_VOLUME
 
 echo -e "\n\nWriting to file:  $path"
 if [ $copt_test = 1 ]; then
