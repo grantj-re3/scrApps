@@ -113,7 +113,7 @@ class ChordLyricLineParts
   # If the line contains chord-tokens, return it in the 2-line CAL format
   # else return the original line.
   ############################################################################
-  def to_s_chord_above_line
+  def to_s_chord_above_lyrics
     @has_tokens && !@line.match(MATCH_KEY_LINE) ? to_s_2_lines : @line
   end
 
@@ -236,7 +236,7 @@ class ChordLyricLineParts
     begin
       while line = gets		# Read lines from command-line args or STDIN
         parts = ChordLyricLineParts.new(line)
-        puts parts.to_s_chord_above_line
+        puts parts.to_s_chord_above_lyrics
       end
 
     rescue Exception => e
