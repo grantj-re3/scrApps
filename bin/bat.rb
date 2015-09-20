@@ -174,8 +174,8 @@ class ExtendedAudioTags
       puts "COMMAND: #{cmd}"
 
       #IO.popen(cmd).gets(nil)					# DO IT!!!
-      #File.rename(rename[:old], rename[:new]) if rename[:new]	# DO IT!
     end
+    #File.rename(rename[:old], rename[:new]) if rename[:new]	# DO IT!
   end
 
   ############################################################################
