@@ -15,11 +15,11 @@
 #   * Default operation is to only show; add switch to "do it"
 #   * Show help
 #   * Use config file other than default
-#   * Permit multiple audio files
-# - Use symbols for hash @config_vars
-# - Use symbols for hash @xtags
-# - Derive hashes Rawtag2Xtag & Xtag2CmdOption from a single array
-# - Add DEBUG
+#   * DONE: Permit multiple audio files
+# - DONE: Use symbols for hash @config_vars
+# - DONE: Use symbols for hash @xtags
+# - DONE: Derive hashes Rawtag2Xtag & Xtag2CmdOption from a single array
+# - DONE: Add DEBUG
 # - Consider using config file which is not ruby-code
 ##############################################################################
 # Add dirs to the library path
@@ -37,28 +37,6 @@ class ExtendedAudioTags
   DEBUG = true
   #DEBUG = false
 
-  Rawtag2Xtag = {
-    "TPE1"	=> "artist",
-    "TALB"	=> "album",
-    "TIT2"	=> "title",
-    "TRCK"	=> "track",
-
-    "COMM"	=> "comment",
-    "TCON"	=> "genre",
-    "TDRC"	=> "year",
-  }
-  Xtag2CmdOption = {
-    "artist"	=> "-a",
-    "album"	=> "-A",
-    "title"	=> "-t",
-    "track"	=> "-T",
-
-    "comment"	=> "-c",
-    "genre"	=> "-g",
-    "year"	=> "-y",
-    "audio_file" => :no_option,
-  }
-=begin
   Xtag_rw_opt_tag = [
     [:artist,		:read_write,	"-a",		"TPE1"],
     [:album,		:read_write,	"-A",		"TALB"],
@@ -72,7 +50,9 @@ class ExtendedAudioTags
     [:audio_file,	:read_write,	:no_option,	:no_tag],
     [:audio_file_dir,	:read,		:no_option,	:no_tag],
   ]
-=end
+  Rawtag2Xtag    = Xtag_rw_opt_tag.inject({}){|h,(xtag,rw,opt,tag)| h[tag] = xtag unless tag == :no_tag; h}
+  Xtag2CmdOption = Xtag_rw_opt_tag.inject({}){|h,(xtag,rw,opt,tag)| h[xtag] = opt if rw == :read_write; h}
+
   ############################################################################
   def initialize(audio_fname)
     @audio_fname = audio_fname
@@ -80,6 +60,7 @@ class ExtendedAudioTags
     @audio_file_dir_abs = File.dirname(@audio_file_abs)
     @xtags = {}
     @config_vars = {}
+    @prepare2write = {}
   end
 
   ############################################################################
@@ -90,22 +71,22 @@ class ExtendedAudioTags
     @xtags = {}
     result.each_line{|line|
       next unless line.match("=")
-      puts "Initial audio tag: #{line}" if DEBUG
+      #puts "Initial audio tag: #{line}" if DEBUG
       rawtag, value = line.chomp.split("=", 2)
       tag = Rawtag2Xtag[rawtag]
       @xtags[tag] = value if tag
     }
     read_extended_tags
-    puts "@xtags: #{@xtags.inspect}" if DEBUG
+    puts "@xtags: #{@xtags.sort.inspect}" if DEBUG
     @xtags		# Return hash of tags
   end
 
   ############################################################################
   def read_extended_tags
     # A read/write extension-tag (just like other music tags)
-    @xtags['audio_file'] = File.basename(@audio_file_abs)
+    @xtags[:audio_file] = File.basename(@audio_file_abs)
     # A read-only extension-tag (because changing the parent dir seems problematic)
-    @xtags['audio_file_dir'] = File.basename(@audio_file_dir_abs)
+    @xtags[:audio_file_dir] = File.basename(@audio_file_dir_abs)
   end
 
   ############################################################################
@@ -116,7 +97,7 @@ class ExtendedAudioTags
     @config_vars = {}
     input_rules.each{|vars, xtag, regex|
       next unless @xtags[xtag]
-      puts "Input rule: var=#{vars.inspect}; xtag='#{xtag}'; regex='#{regex}'" if DEBUG
+      puts "Input rule: var=#{vars.inspect}; xtag=:#{xtag}; regex='#{regex}'" if DEBUG
       match = @xtags[xtag].match(regex)
 
       if vars.length != match.length-1
@@ -137,58 +118,67 @@ class ExtendedAudioTags
   ############################################################################
   def prepare_to_write_xtags
     output_rules = Xtag_write_rules
-
-    opts = []
-    rename = {}
+    opts = []			# List of command line options (for Music tags)
+    @prepare2write = {}		# Info which we will write
     output_rules.each{|vars, xtag, fmt_str|
-      puts "Output rule: vars=#{vars.inspect}; xtag=#{xtag}; fmt_str=#{fmt_str}" if DEBUG
+      puts "Output rule: vars=#{vars.inspect}; xtag=:#{xtag}; fmt_str='#{fmt_str}'" if DEBUG
 
       unless Xtag2CmdOption[xtag]
         STDERR.puts "WARNING: xtag '#{xtag}' is not recogised in output rule:"
         STDERR.puts "  vars:#{vars.inspect}; xtag:#{xtag}; fmt_str:#{fmt_str}" if DEBUG
         next
       end
-      if xtag.match("^audio_file")
-        hash_elements = vars.inject([]){|a,var| a << "@config_vars['#{var}']"}	# Eg. ["@config_vars['v1']"]
-	statement = "sprintf(fmt_str, #{hash_elements.join(', ')})"		# Eg. "sprintf("%s", @config_vars['v1'])"
-        dest_fname = eval(statement)						# Eg. "new_filename.mp3"
+      hash_elements = vars.inject([]){|a,var| a << "@config_vars[:#{var}]"}	# Eg. ["@config_vars[:v1]"]
+      statement = "sprintf(fmt_str, #{hash_elements.join(', ')})"		# Eg. "sprintf("%s", @config_vars[:v1])"
+      value = eval(statement)							# Eg. "new_filename.mp3"
+      if xtag == :audio_file
+        dest_fname = value
+        # Call method to check filename; file exists; src/dest filenames not same; etc
         if dest_fname.match('.\..')
           puts "Renaming '#{@audio_file_abs}' to '#{@audio_file_dir_abs}/#{dest_fname}'"
-          rename[:old] = @audio_file_abs
-          rename[:new] = "#{@audio_file_dir_abs}/#{dest_fname}"
+          @prepare2write[:new_file_abs] = "#{@audio_file_dir_abs}/#{dest_fname}"
+          @prepare2write[:is_done] = false
         else
           STDERR.puts "Not renaming '#{@audio_file_abs}'"
           STDERR.puts "Destination file '#{dest_fname}' does not have basename.ext"
         end
-      else
-        hash_elements = vars.inject([]){|a,var| a << "@config_vars['#{var}']"}	# Eg. ["@config_vars['v1']"]
-	statement = "sprintf(fmt_str, #{hash_elements.join(', ')})"		# Eg. "sprintf("%d", @config_vars['v1'])"
-        value = eval(statement)							# Eg. "3"
-        opt = "#{Xtag2CmdOption[xtag]} '#{value}'"				# Eg. "-T 3"
-        opts << opt
+      elsif xtag != :audio_file_dir
+        opts << "#{Xtag2CmdOption[xtag]} '#{value}'"				# Eg. "-t 'Song'"
       end
-
     }
     unless opts.empty?
-      cmd = "mid3v2 #{opts.join(' ')} '#{@audio_fname}'"
-      puts "COMMAND: #{cmd}"
-
-      #IO.popen(cmd).gets(nil)					# DO IT!!!
+      @prepare2write[:cmd] = "mid3v2 #{opts.join(' ')} '#{@audio_fname}'"
+      @prepare2write[:is_done] = false
+      puts "COMMAND: #{@prepare2write[:cmd]}"
     end
-    #File.rename(rename[:old], rename[:new]) if rename[:new]	# DO IT!
+  end
+
+  ############################################################################
+  def write_xtags
+    # Ensure a single prepare-hash can only be executed once
+    if @prepare2write[:is_done]
+      return false
+    else
+      IO.popen(@prepare2write[:cmd]).gets(nil) if @prepare2write[:cmd]
+      File.rename(@audio_file_abs, @prepare2write[:new_file_abs]) if @prepare2write[:new_file_abs]
+      @prepare2write[:is_done] = true
+      return true
+    end
   end
 
   ############################################################################
   def self.main
-audio_fname = "#{ENV['HOME']}/My collection 1977-02-05/01_1977-02-05_MyMusic.mp3"
     puts "\n\n\nBULK AUDIO TAGGER (BAT)\n" + "-" * 23
 
-    xtag = ExtendedAudioTags.new(audio_fname)
-    xtag.read_tags_from_audio_file
-    xtag.extract_config_vars
-    xtag.prepare_to_write_xtags
-
-puts "THE END"
+    # FIXME: Check files
+    ARGV.each{|audio_fname|
+      puts "\nAudio filename: '#{audio_fname}'"
+      xtag = ExtendedAudioTags.new(audio_fname)
+      xtag.read_tags_from_audio_file
+      xtag.extract_config_vars
+      xtag.prepare_to_write_xtags
+      #xtag.write_xtags
+    }
   end
 end
 
