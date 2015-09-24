@@ -9,9 +9,10 @@
 #
 # TODO:
 # - Add command line opts
-#   * Show tags read from file (one-line/multi-line)
+#   * Show xtags before & after rules
 #   * Show vars
 #   * Show list of xtags
+#   * Show list of rules
 #   * Default operation is to only show; add switch to "do it"
 #   * Show help
 #   * Use config file other than default
@@ -20,6 +21,9 @@
 # - DONE: Use symbols for hash @xtags
 # - DONE: Derive hashes Rawtag2Xtag & Xtag2CmdOption from a single array
 # - DONE: Add DEBUG
+# - FIXME: Check input files
+# - FIXME: Call method to check dest filename; file exists; src/dest filenames not same; etc
+# - Add xtag :audio_file_path
 # - Consider using config file which is not ruby-code
 ##############################################################################
 # Add dirs to the library path
@@ -31,7 +35,6 @@ default_config_fname = File.basename($0, File.extname($0)) + '_conf.rb'
 require default_config_fname
 
 ##############################################################################
-# mid3v2
 class ExtendedAudioTags
 
   DEBUG = true
@@ -100,6 +103,7 @@ class ExtendedAudioTags
       puts "Input rule: var=#{vars.inspect}; xtag=:#{xtag}; regex='#{regex}'" if DEBUG
       match = @xtags[xtag].match(regex)
 
+      match = [] unless match
       if vars.length != match.length-1
         bracketed_matchs = match.length==0 ? [] : match.to_a[1, match.length-1]
         STDERR.puts <<-MSG_WARN_MATCH_LENGTH.gsub(/^\t*/, '')
@@ -133,7 +137,7 @@ class ExtendedAudioTags
       value = eval(statement)							# Eg. "new_filename.mp3"
       if xtag == :audio_file
         dest_fname = value
-        # Call method to check filename; file exists; src/dest filenames not same; etc
+        # FIXME: Call method to check dest filename; file exists; src/dest filenames not same; etc
         if dest_fname.match('.\..')
           puts "Renaming '#{@audio_file_abs}' to '#{@audio_file_dir_abs}/#{dest_fname}'"
           @prepare2write[:new_file_abs] = "#{@audio_file_dir_abs}/#{dest_fname}"
@@ -170,7 +174,7 @@ class ExtendedAudioTags
   def self.main
     puts "\n\n\nBULK AUDIO TAGGER (BAT)\n" + "-" * 23
 
-    # FIXME: Check files
+    # FIXME: Check input files
     ARGV.each{|audio_fname|
       puts "\nAudio filename: '#{audio_fname}'"
       xtag = ExtendedAudioTags.new(audio_fname)
