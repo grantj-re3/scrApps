@@ -13,7 +13,7 @@
 #   * DONE: Show vars
 #   * Show list of xtags
 #   * Show list of rules
-#   * Default operation is to only show; add switch to "do it"
+#   * DONE: Default operation is to only show; add switch to "do it"
 #   * Show help
 #   * Use config file other than default
 #   * DONE: Permit multiple audio files
@@ -78,11 +78,11 @@ class ExtendedAudioTags
 
   ############################################################################
   def initialize(audio_fname, opts={})
-    @opts = opts
+    @opts = Default_options.merge(opts)	# Duplicate keys from opts overwrite Default_options
     @audio_fname = audio_fname
     @audio_file_abs = File.expand_path(@audio_fname)
     @audio_file_dir_abs = File.dirname(@audio_file_abs)
-    puts "\nAudio filename: '#{@audio_fname}'" if opts[:show_audio_file]
+    puts "\nAudio filename: '#{@audio_fname}'" if @opts[:show_audio_file]
 
     @xtags = {}
     @new_xtags = {}
@@ -227,12 +227,81 @@ class ExtendedAudioTags
   end
 
   ############################################################################
+  def self.get_command_line_args
+    msg = <<-MSG_COMMAND_LINE_ARGS.gsub(/^\t*/, '')
+		Usage:  #{File.basename $0} OPTIONS AUDIO_FILES
+		where
+		  AUDIO_FILES is a list of audio files (eg. mp3) which support ID3v2 tags for
+		  artist, title, track, etc. So you can keep track of what is happening, it is
+		  recommended that all the audio files being processed per run are in the same
+		  directory so that they have the same rules applied.
+
+		  OPTIONS are listed below.
+
+		  -e|--execute: Execute the changes. Without this option the program will only
+		    perform a dry-run (i.e. show what will be done).
+		  -h|--help:    These help instructions.
+		  ...
+    MSG_COMMAND_LINE_ARGS
+
+    opts = {}
+    while ARGV[0] =~ /^[\-\+]/
+      arg = ARGV.shift
+      case arg
+        # Reserved:
+        # * '+a', '--show-tags-after'
+        # * '+b', '--show-tags-before'
+        # * '+r', '--show-rules'
+
+        when '-2', '--do-not-show-both-tags'
+          opts[:show_tags_both] = false
+        when '+2', '--show-both-tags'
+          opts[:show_tags_both] = true
+
+        when '-c', '--do-not-show-commands'
+          opts[:show_commands] = false
+        when '+c', '--show-commands'
+          opts[:show_commands] = true
+
+        when '-e', '--do-not-execute'
+          opts[:execute] = false
+        when '+e', '--execute'
+          opts[:execute] = true
+
+        when '-f', '--do-not-show-audio-file'
+          opts[:show_audio_file] = false
+        when '+f', '--show-audio-file'
+          opts[:show_audio_file] = true
+
+        when '-v', '--do-not-show-vars'
+          opts[:show_vars] = false
+        when '+v', '--show-vars'
+          opts[:show_vars] = true
+
+        else	# '-h', '--help' and invalid options
+          STDERR.puts "Unrecognised option: '#{arg}'\n\n"
+          STDERR.puts msg
+          exit 0
+      end
+    end
+    # Everything else in ARGV should be a list of filenames
+    if ARGV.length == 0
+      STDERR.puts "Error: No files were specified.\n\n"
+      STDERR.puts msg
+      exit 0
+    end
+    opts
+  end
+
+  ############################################################################
   def self.main
+    opts = get_command_line_args
     puts "\n\n\nBULK AUDIO TAGGER (BAT)\n" + "-" * 23
 
     # FIXME: Check input files
+
     ARGV.each{|audio_fname|
-      xtag = ExtendedAudioTags.new(audio_fname, Default_options)
+      xtag = ExtendedAudioTags.new(audio_fname, opts)
       xtag.read_tags_from_audio_file
       xtag.extract_config_vars
       xtag.prepare_to_write_xtags
