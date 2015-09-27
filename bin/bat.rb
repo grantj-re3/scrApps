@@ -11,10 +11,10 @@
 # - Add command line opts
 #   * DONE: Show xtags before & after rules
 #   * DONE: Show vars
-#   * Show list of xtags
+#   * DONE: Show list of xtags
 #   * Show list of rules
 #   * DONE: Default operation is to only show; add switch to "do it"
-#   * Show help
+#   * DONE: Show help
 #   * Use config file other than default
 #   * DONE: Permit multiple audio files
 # - DONE: Use symbols for hash @config_vars
@@ -24,7 +24,7 @@
 # - FIXME: Check input files
 # - FIXME: Call method to check dest filename; file exists; src/dest filenames not same; etc
 # - DONE: Add xtag :audio_file_path
-# - FIXME: Write xtags_same?() to confirm xtags written are not identical to those read
+# - DONE: FIXME: Write xtags_same?() to confirm xtags written are not identical to those read
 # - Consider using config file which is not ruby-code
 ##############################################################################
 # Add dirs to the library path
@@ -100,8 +100,8 @@ class ExtendedAudioTags
       next unless line.match("=")
       #puts "Initial audio tag: #{line}" if DEBUG
       rawtag, value = line.chomp.split("=", 2)
-      tag = Rawtag2Xtag[rawtag]
-      @xtags[tag] = value if tag
+      xtag = Rawtag2Xtag[rawtag]
+      @xtags[xtag] = value if xtag
     }
     read_extended_tags
     puts "@xtags: #{@xtags.sort.inspect}" if DEBUG
@@ -201,8 +201,8 @@ class ExtendedAudioTags
 
   ############################################################################
   def xtags_same?
-    # FIXME
-    false
+    @new_xtags.each{|xtag, new_value| return false if new_value != @xtags[xtag] }
+    true
   end
 
   ############################################################################
@@ -211,6 +211,7 @@ class ExtendedAudioTags
     if @prepare2write[:is_done]
       return false
     elsif xtags_same?
+      STDERR.puts "NOTICE: All new xtags are identical to those read. Will not update audio file."
       return false
     else
       if @prepare2write[:cmd]
@@ -238,10 +239,30 @@ class ExtendedAudioTags
 
 		  OPTIONS are listed below.
 
-		  -e|--execute: Execute the changes. Without this option the program will only
-		    perform a dry-run (i.e. show what will be done).
+		  +2|--show-both-tags or -2|--do-not-show-both-tags: Show what the tag values
+		    will be before and after changes are applied (or not). Default: +2
+
+		  +c|--show-commands or -c|--do-not-show-commands: Show the commands (or not)
+		    which will be performed to change the xtags. Default: -e
+
+		  +e|--execute or -e|--do-not-execute or +e|--execute: Execute the changes
+		    (or not). The program will not perform the changes if -e is specified.
+		    Default: -e.
+
+		  +f|--show-audio-file or -f|--do-not-show-audio-file: Show the audio file
+		    name (or not). Default: +f
+
+		  +v|--show-vars or -v|--do-not-show-vars: Show the variables extracted from
+		    the xtags (or not). Default: +v
+
 		  -h|--help:    These help instructions.
-		  ...
+
+		Example:  #{File.basename $0} +f +2 -v -e /path/to/dir/*.mp3
+
+		Readable xtags available in rules file:
+		  #{AllXtags.sort.inspect.tr('[]', '').sub(/(:comment,)/, "\n  \\1")}
+		Writable xtags available in rules file:
+		  #{Xtag2CmdOption.keys.sort.inspect.tr('[]', '')}
     MSG_COMMAND_LINE_ARGS
 
     opts = {}
