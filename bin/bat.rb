@@ -21,8 +21,8 @@
 # - DONE: Use symbols for hash @xtags
 # - DONE: Derive hashes Rawtag2Xtag & Xtag2CmdOption from a single array
 # - DONE: Add DEBUG
-# - FIXME: Check input files
-# - FIXME: Call method to check dest filename; file exists; src/dest filenames not same; etc
+# - DONE: FIXME: Check input files
+# - FIXME: Call method to check dest filename; file exists; src/dest filenames not same; no dup dest fnames; etc
 # - DONE: Add xtag :audio_file_path
 # - DONE: FIXME: Write xtags_same?() to confirm xtags written are not identical to those read
 # - Consider using config file which is not ruby-code
@@ -78,7 +78,8 @@ class ExtendedAudioTags
 
   ############################################################################
   def initialize(audio_fname, opts={})
-    @opts = Default_options.merge(opts)	# Duplicate keys from opts overwrite Default_options
+    @opts = Default_options.merge(opts)	# Duplicate keys from opts overwrites Default_options
+
     @audio_fname = audio_fname
     @audio_file_abs = File.expand_path(@audio_fname)
     @audio_file_dir_abs = File.dirname(@audio_file_abs)
@@ -91,8 +92,32 @@ class ExtendedAudioTags
   end
 
   ############################################################################
+  def self.verify_audio_fname_rw(fname)
+    unless File.exists?(fname)
+      STDERR.puts "File not found: '#{fname}'"
+      exit 3
+    end
+    unless File.readable?(fname)
+      STDERR.puts "File not readable: '#{fname}'"
+      exit 3
+    end
+    unless File.writable?(fname)
+      STDERR.puts "File not writable: '#{fname}'"
+      exit 3
+    end
+
+    # Check this is an audio file
+    cmd = "file -bL '#{fname}'"
+    result = IO.popen(cmd).gets(nil).chomp
+    unless result =~ /audio/i
+      STDERR.puts "File is not audio: '#{fname}'\nIt is:  #{result}"
+      exit 4
+    end
+  end
+
+  ############################################################################
   def read_tags_from_audio_file
-    cmd = "mid3v2 -l \"#{@audio_fname}\""
+    cmd = "mid3v2 -l '#{@audio_fname}'"
     result = IO.popen(cmd).gets(nil).chomp
 
     @xtags = {}
@@ -299,17 +324,21 @@ class ExtendedAudioTags
         when '+v', '--show-vars'
           opts[:show_vars] = true
 
-        else	# '-h', '--help' and invalid options
-          STDERR.puts "Unrecognised option: '#{arg}'\n\n"
+        when '-h', '--help'
           STDERR.puts msg
           exit 0
+
+        else	# Invalid options
+          STDERR.puts "Unrecognised option: '#{arg}'\n\n"
+          STDERR.puts msg
+          exit 1
       end
     end
     # Everything else in ARGV should be a list of filenames
     if ARGV.length == 0
       STDERR.puts "Error: No files were specified.\n\n"
       STDERR.puts msg
-      exit 0
+      exit 2
     end
     opts
   end
@@ -319,8 +348,7 @@ class ExtendedAudioTags
     opts = get_command_line_args
     puts "\n\n\nBULK AUDIO TAGGER (BAT)\n" + "-" * 23
 
-    # FIXME: Check input files
-
+    ARGV.each{|audio_fname| verify_audio_fname_rw(audio_fname) }
     ARGV.each{|audio_fname|
       xtag = ExtendedAudioTags.new(audio_fname, opts)
       xtag.read_tags_from_audio_file
