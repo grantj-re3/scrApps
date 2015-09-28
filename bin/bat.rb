@@ -1,7 +1,14 @@
 #!/usr/bin/ruby
-# bat.rb -- Bulk Audio Tagger
+# Bulk Audio Tagger
 #
-# GPLv3
+# File:		bat.rb
+# Author:	Grant Jackson
+# Package:	N/A
+# Environment:	Ruby 2.0.0
+#
+# Copyright (C) 2015
+# Licensed under GPLv3. GNU GENERAL PUBLIC LICENSE, Version 3, 29 June 2007
+# http://www.gnu.org/licenses/
 #
 # Tag audio files according to rules in a config file. The program
 # uses the Python app mid3v2 to read and write audio file tags.
@@ -12,10 +19,10 @@
 #   * DONE: Show xtags before & after rules
 #   * DONE: Show vars
 #   * DONE: Show list of xtags
-#   * Show list of rules
+#   * N/A: Show list of rules
 #   * DONE: Default operation is to only show; add switch to "do it"
 #   * DONE: Show help
-#   * Use config file other than default
+#   * DONE Use rules-file other than default
 #   * DONE: Permit multiple audio files
 # - DONE: Use symbols for hash @config_vars
 # - DONE: Use symbols for hash @xtags
@@ -31,11 +38,7 @@
 $: << File.expand_path("../etc", File.dirname(__FILE__))
 $: << File.expand_path(".", File.dirname(__FILE__))
 
-require 'set'
-
-# THIS_SCRIPT.rb will have default config: THIS_SCRIPT_conf.rb
-default_config_fname = File.basename($0, File.extname($0)) + '_rules.rb'
-require default_config_fname
+#require 'set'
 
 ##############################################################################
 # ID3v2 Audio tags plus extras:
@@ -45,6 +48,10 @@ class XAudioTags
 
   #DEBUG = true
   DEBUG = false
+
+  # THIS_SCRIPT.rb will have default config: THIS_SCRIPT_conf.rb
+  Default_rules_fname = File.basename($0, File.extname($0)) + '_rules.rb'
+  Rules_file_bytes_max = 1000000
 
   Regex_audio_file = /audio|MPEG ADTS/i
 
@@ -108,15 +115,15 @@ class XAudioTags
   ############################################################################
   def self.verify_audio_fname_rw(fname)
     unless File.exists?(fname)
-      STDERR.puts "File not found: '#{fname}'"
+      STDERR.puts "ERROR: File not found: '#{fname}'"
       exit 3
     end
     unless File.readable?(fname)
-      STDERR.puts "File not readable: '#{fname}'"
+      STDERR.puts "ERROR: File not readable: '#{fname}'"
       exit 3
     end
     unless File.writable?(fname)
-      STDERR.puts "File not writable: '#{fname}'"
+      STDERR.puts "ERROR: File not writable: '#{fname}'"
       exit 3
     end
 
@@ -124,8 +131,8 @@ class XAudioTags
     cmd = "file -bL '#{fname}'"
     result = IO.popen(cmd).gets(nil).chomp
     unless result =~ Regex_audio_file
-      STDERR.puts "File is not audio: '#{fname}'\nIt is:  #{result}"
-      exit 4
+      STDERR.puts "ERROR: File is not audio: '#{fname}'\nIt is:  #{result}"
+      exit 3
     end
   end
 
@@ -273,6 +280,33 @@ class XAudioTags
   end
 
   ############################################################################
+  def self.load_rules_file(rules_fname)
+    unless File.exists?(rules_fname)
+      STDERR.puts "ERROR: Rules-file not found: '#{rules_fname}'"
+      exit 4
+    end
+    unless File.readable?(rules_fname)
+      STDERR.puts "ERROR: Rules-file not readable: '#{rules_fname}'"
+      exit 4
+    end
+    unless rules_fname =~ /^.+\.rb/
+      STDERR.puts "ERROR: Rules-file is not a ruby file with extension '.rb'"
+      exit 4
+    end
+    unless File.size(rules_fname) <= Rules_file_bytes_max
+      STDERR.puts "ERROR: Rules-file must be #{Rules_file_bytes_max} bytes or less"
+      exit 4
+    end
+
+    rules_str = File.new(rules_fname, 'r').read
+    unless rules_str =~ /Xtag_read_rules *=/ && rules_str =~ /Xtag_write_rules *=/
+      STDERR.puts "ERROR: Rules-file must assign 'Xtag_read_rules' and 'Xtag_write_rules'"
+      exit 4
+    end
+    require rules_fname
+  end
+
+  ############################################################################
   def self.get_command_line_args
     msg = <<-MSG_COMMAND_LINE_ARGS.gsub(/^\t*/, '')
 		Usage:  #{File.basename $0} OPTIONS AUDIO_FILES
@@ -310,7 +344,9 @@ class XAudioTags
 		  #{Xtag2CmdOption.keys.sort.inspect.tr('[]', '')}
     MSG_COMMAND_LINE_ARGS
 
-    opts = {}
+    opts = {
+      :rules_fname => Default_rules_fname	# Might be overridden from command line
+    }
     while ARGV[0] =~ /^[\-\+]/
       arg = ARGV.shift
       case arg
@@ -344,6 +380,14 @@ class XAudioTags
         when '+v', '--show-vars'
           opts[:show_vars] = true
 
+        when '-r', '--load-rules-file'
+          if ARGV.length > 0
+            opts[:rules_fname] = ARGV.shift
+          else
+            STDERR.puts "ERROR: #{arg} must be followed by the name of a file containing rules."
+            exit 1
+          end
+
         when '-h', '--help'
           STDERR.puts msg
           exit 0
@@ -367,6 +411,8 @@ class XAudioTags
   def self.main
     opts = get_command_line_args
     puts "\n\n\nBULK AUDIO TAGGER (BAT)\n" + "-" * 23
+    puts "Rules file: #{opts[:rules_fname]}\n\n"
+    load_rules_file(opts[:rules_fname])
 
     xtags = []			# Store every xtag object
     xtags_by_dest_fname = {}	# Store each xtag object which results in the specified dest filename
@@ -394,7 +440,7 @@ class XAudioTags
       end
     }
     if will_halt
-      STDERR.puts "\nQuitting due to errors: No files were changed" if will_halt
+      STDERR.puts "\nQuitting due to errors: No files were changed"
       exit 6
     end
 
