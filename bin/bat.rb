@@ -334,9 +334,13 @@ class XAudioTags
 		  +v|--show-vars or -v|--do-not-show-vars: Show the variables extracted from
 		    the xtags (or not). Default: +v
 
-		  -h|--help:    These help instructions.
+		  -r RULES_FNAME.rb|--load-rules-file RULES_FNAME.rb: Read the rules from
+		    the ruby file RULES_FNAME.rb instead of from the default ruby file
+		    '#{Default_rules_fname}'.
 
-		Example:  #{File.basename $0} +f +2 -v -e /path/to/dir/*.mp3
+		  -h|--help: These help instructions.
+
+		Example:  #{File.basename $0} -r myrules.rb +f +2 -v -e /path/to/dir/*.mp3
 
 		Readable xtags available in rules file:
 		  #{AllXtags.sort.inspect.tr('[]', '').sub(/(:comment,)/, "\n  \\1")}
