@@ -34,10 +34,6 @@
 # - DONE: FIXME: Write xtags_same?() to confirm xtags written are not identical to those read
 # - Consider using config file which is not ruby-code
 ##############################################################################
-# Add dirs to the library path
-$: << File.expand_path("../etc", File.dirname(__FILE__))
-$: << File.expand_path(".", File.dirname(__FILE__))
-
 #require 'set'
 
 ##############################################################################
@@ -48,6 +44,15 @@ class XAudioTags
 
   #DEBUG = true
   DEBUG = false
+
+  # Search path for rules-file if no path specified. Earlier dirs are searched
+  # first. The first matching filename found will be used.
+  Rules_file_search_dirs = [
+    # The first dir to search will be the audio-file dir (not listed below).
+    # Subsequent paths (listed below) are relative to this script.
+    "../etc",
+    ".",
+  ]
 
   # THIS_SCRIPT.rb will have default config: THIS_SCRIPT_conf.rb
   Default_rules_fname = File.basename($0, File.extname($0)) + '_rules.rb'
@@ -280,11 +285,37 @@ class XAudioTags
   end
 
   ############################################################################
-  def self.load_rules_file(rules_fname)
-    unless File.exists?(rules_fname)
-      STDERR.puts "ERROR: Rules-file not found: '#{rules_fname}'"
-      exit 4
+  def self.load_rules_file(opts)
+    if opts[:rules_fname] =~ /\//
+      # Absolute or relative path was specified on command line
+      rules_fname = opts[:rules_fname]
+
+      unless File.exists?(rules_fname)
+        STDERR.puts "ERROR: Rules-file not found: '#{rules_fname}'"
+        exit 4
+      end
+
+    else
+      # Rules filename here does not have a path. It is either the default
+      # filename or specified on command line without a path. Hence search
+      # in known dirs.
+      rules_fname = nil
+      opts[:rules_file_search_dirs].each{|dir|
+        try_fname = "#{dir}/#{opts[:rules_fname]}"
+        if File.exists?(try_fname)
+          puts "Rules file FOUND at:     #{try_fname}"
+          rules_fname = try_fname
+          break
+        end
+        puts "Rules file NOT found at: #{try_fname}"
+      }
+
+      unless rules_fname
+        STDERR.puts "ERROR: Rules-file not found."
+        exit 4
+      end
     end
+
     unless File.readable?(rules_fname)
       STDERR.puts "ERROR: Rules-file not readable: '#{rules_fname}'"
       exit 4
@@ -336,7 +367,13 @@ class XAudioTags
 
 		  -r RULES_FNAME.rb|--load-rules-file RULES_FNAME.rb: Read the rules from
 		    the ruby file RULES_FNAME.rb instead of from the default ruby file
-		    '#{Default_rules_fname}'.
+		    '#{Default_rules_fname}'. Here you can specify an absolute path, a
+		    relative path or a basename (ie. filename without a directory path).
+		    In the latter case and for the default ruby file '#{Default_rules_fname}',
+		    the program will search for the file in the following sequence:
+		    * in the same directory as the first audio file in the list
+		    * in ../etc directory (relative to this program)
+		    * in the same directory as this program
 
 		  -h|--help: These help instructions.
 
@@ -408,6 +445,11 @@ class XAudioTags
       STDERR.puts msg
       exit 2
     end
+
+    audio_file_dirname_abs = File.expand_path( File.dirname(ARGV[0]) )
+    opts[:rules_file_search_dirs] = Rules_file_search_dirs.inject([audio_file_dirname_abs]){|a,dir|
+      a << File.expand_path(dir, File.dirname(__FILE__))
+    }
     opts
   end
 
@@ -415,8 +457,7 @@ class XAudioTags
   def self.main
     opts = get_command_line_args
     puts "\n\n\nBULK AUDIO TAGGER (BAT)\n" + "-" * 23
-    puts "Rules file: #{opts[:rules_fname]}\n\n"
-    load_rules_file(opts[:rules_fname])
+    load_rules_file(opts)
 
     xtags = []			# Store every xtag object
     xtags_by_dest_fname = {}	# Store each xtag object which results in the specified dest filename
