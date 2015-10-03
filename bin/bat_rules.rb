@@ -3,7 +3,10 @@ Xtag_read_rules = [
   # The first N parentheised regex matches will populate N variables.
   # [ :xtag,		'regex_to_extract_myvars_from_xtag',	[:var1, :var2, ...] ]
 
-  [ :audio_file,	'^(\d+)',		 [:trackno] ],
+  # Regex '^0*(\d+)' is used (rather that '^(\d+)') to strip leading zeros
+  # and hence prevent :trackno being interpreted as octal in Xtag_write_rules
+  # (preventing tracks 08 and 09 from giving an eval error).
+  [ :audio_file,	'^0*(\d+)',		 [:trackno] ],
   [ :audio_file,	'\.([^\.]+)$',		 [:ext] ],
   #[ :audio_file_dir,	'(\d{4})-\d{2}-\d{2}$',	 [:year] ],
   [ :audio_file_dir,	'^(.*) *- *(.*)$',	 [:artist_name, :album_name] ],

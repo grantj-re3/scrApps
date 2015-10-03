@@ -210,8 +210,8 @@ class XAudioTags
         STDERR.puts "  xtag:#{xtag}; fmt_str:#{fmt_str}; vars:#{vars.inspect}"
         next
       end
-      hash_elements = vars.inject([]){|a,var| a << "@config_vars[:#{var}]"}	# Eg. ["@config_vars[:v1]"]
-      statement = "sprintf('#{fmt_str}', #{hash_elements.join(', ')})"		# Eg. "sprintf("%s", @config_vars[:v1])"
+      hash_elements = vars.inject([]){|a,var| a << ", @config_vars[:#{var}]"}	# Eg. [", @config_vars[:v1]"]
+      statement = "sprintf('#{fmt_str}'#{hash_elements.join})"	# Eg. "sprintf("%s", @config_vars[:v1])"
       begin
         value = eval(statement)							# Eg. "new_filename.mp3"
       rescue Exception => e
